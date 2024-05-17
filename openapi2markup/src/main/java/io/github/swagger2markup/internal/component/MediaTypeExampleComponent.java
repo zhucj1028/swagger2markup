@@ -15,6 +15,7 @@
  */
 package io.github.swagger2markup.internal.component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.swagger2markup.OpenAPI2MarkupConverter;
 import io.github.swagger2markup.adoc.ast.impl.ParagraphBlockImpl;
 import io.github.swagger2markup.extension.MarkupComponent;
@@ -43,14 +44,23 @@ public class MediaTypeExampleComponent extends MarkupComponent<StructuralNode, M
     public StructuralNode apply(StructuralNode node, MediaTypeExampleComponent.Parameters parameters) {
         Object example = parameters.example;
         if (example == null || StringUtils.isBlank(example.toString())) return node;
-
         ParagraphBlockImpl sourceBlock = new ParagraphBlockImpl(node);
         sourceBlock.setTitle(labels.getLabel(LABEL_EXAMPLE));
-        sourceBlock.setAttribute("style", "source", true);
-        sourceBlock.setSource(DELIMITER_BLOCK + LINE_SEPARATOR + example + LINE_SEPARATOR + DELIMITER_BLOCK);
+        // 目前只支持json
+        sourceBlock.setAttribute("style", "source,json", true);
+        sourceBlock.setSource(DELIMITER_BLOCK + LINE_SEPARATOR + parseExample(example) + LINE_SEPARATOR + DELIMITER_BLOCK);
         node.append(sourceBlock);
 
         return node;
+    }
+
+    private String parseExample(Object raw) throws RuntimeException {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(raw);
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to read example", ex);
+        }
     }
 
     public static class Parameters {

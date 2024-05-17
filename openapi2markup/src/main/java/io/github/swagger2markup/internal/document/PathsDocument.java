@@ -4,10 +4,7 @@ import io.github.swagger2markup.OpenAPI2MarkupConverter;
 import io.github.swagger2markup.adoc.ast.impl.SectionImpl;
 import io.github.swagger2markup.adoc.ast.impl.TableImpl;
 import io.github.swagger2markup.extension.MarkupComponent;
-import io.github.swagger2markup.internal.component.ExternalDocumentationComponent;
-import io.github.swagger2markup.internal.component.ParametersComponent;
-import io.github.swagger2markup.internal.component.ResponseComponent;
-import io.github.swagger2markup.internal.component.SecurityRequirementTableComponent;
+import io.github.swagger2markup.internal.component.*;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.servers.Server;
@@ -27,6 +24,7 @@ public class PathsDocument extends MarkupComponent<Document, PathsDocument.Param
     private final ExternalDocumentationComponent externalDocumentationComponent;
     private final ResponseComponent responseComponent;
     private final SecurityRequirementTableComponent securityRequirementTableComponent;
+    private final RequestBodyComponent requestBodyComponent;
 
     public PathsDocument(OpenAPI2MarkupConverter.OpenAPIContext context) {
         super(context);
@@ -34,6 +32,7 @@ public class PathsDocument extends MarkupComponent<Document, PathsDocument.Param
         this.externalDocumentationComponent = new ExternalDocumentationComponent(context);
         this.responseComponent = new ResponseComponent(context);
         this.securityRequirementTableComponent = new SecurityRequirementTableComponent(context);
+        this.requestBodyComponent = new RequestBodyComponent(context);
     }
 
     public static Parameters parameters(OpenAPI schema) {
@@ -57,6 +56,7 @@ public class PathsDocument extends MarkupComponent<Document, PathsDocument.Param
                     appendDescription(operationSection, operation.getDescription());
                     externalDocumentationComponent.apply(operationSection, operation.getExternalDocs());
                     parametersComponent.apply(operationSection, operation.getParameters());
+                    requestBodyComponent.apply(operationSection, operation.getRequestBody());
                     responseComponent.apply(operationSection, operation.getResponses());
                     appendServersSection(operationSection, operation.getServers());
                     securityRequirementTableComponent.apply(operationSection, operation.getSecurity(), false);
