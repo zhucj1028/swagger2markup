@@ -128,6 +128,10 @@ public class StructuralNodeImpl extends ContentNodeImpl implements StructuralNod
         return level;
     }
 
+    public void setLevel(Integer level) {
+        this.level = level;
+    }
+
     @Override
     public Cursor getSourceLocation() {
         return new CursorImpl();

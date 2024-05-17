@@ -23,13 +23,11 @@ import org.asciidoctor.ast.Document;
 import org.asciidoctor.ast.StructuralNode;
 import org.asciidoctor.ast.Table;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static io.github.swagger2markup.config.OpenAPILabels.*;
 import static io.github.swagger2markup.internal.helper.OpenApiHelpers.generateInnerDoc;
+import static io.github.swagger2markup.internal.helper.OpenApiHelpers.getSchemaTypeAsString;
 
 public class ResponseComponent extends MarkupComponent<StructuralNode, ResponseComponent.Parameters, StructuralNode> {
 
@@ -66,13 +64,14 @@ public class ResponseComponent extends MarkupComponent<StructuralNode, ResponseC
         pathResponsesTable.setHeaderRow(
                 labels.getLabel(TABLE_HEADER_HTTP_CODE),
                 labels.getLabel(TABLE_HEADER_DESCRIPTION),
-                labels.getLabel(TABLE_HEADER_LINKS));
+                labels.getLabel(TABLE_HEADER_SCHEMA));
 
         apiResponses.forEach((httpCode, apiResponse) ->
                 pathResponsesTable.addRow(
                         generateInnerDoc(pathResponsesTable, httpCode),
                         getResponseDescriptionColumnDocument(pathResponsesTable, apiResponse),
-                        linkComponent.apply(pathResponsesTable, apiResponse.getLinks())
+                        generateInnerDoc(pathResponsesTable, getResponseSchema(apiResponse))
+                        // linkComponent.apply(pathResponsesTable, apiResponse.getLinks())
                 ));
         serverSection.append(pathResponsesTable);
         return serverSection;
@@ -83,6 +82,14 @@ public class ResponseComponent extends MarkupComponent<StructuralNode, ResponseC
         headersComponent.apply(document, apiResponse.getHeaders());
         mediaContentComponent.apply(document, apiResponse.getContent());
         return document;
+    }
+
+    private String  getResponseSchema(ApiResponse apiResponse) {
+        List<String> schemaTypes = new ArrayList<>();
+        apiResponse.getContent().forEach((name,schema) -> {
+            schemaTypes.add(getSchemaTypeAsString(schema.getSchema()));
+        });
+        return String.join(", ", schemaTypes);
     }
 
     public static class Parameters {

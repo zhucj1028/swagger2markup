@@ -18,6 +18,7 @@ package io.github.swagger2markup.internal.component;
 import io.github.swagger2markup.OpenAPI2MarkupConverter;
 import io.github.swagger2markup.adoc.ast.impl.DescriptionListEntryImpl;
 import io.github.swagger2markup.adoc.ast.impl.DescriptionListImpl;
+import io.github.swagger2markup.adoc.ast.impl.DocumentImpl;
 import io.github.swagger2markup.adoc.ast.impl.ListItemImpl;
 import io.github.swagger2markup.extension.MarkupComponent;
 import io.swagger.v3.oas.models.media.Content;
@@ -62,12 +63,12 @@ public class MediaContentComponent extends MarkupComponent<StructuralNode, Media
         content.forEach((type, mediaType) -> {
             DescriptionListEntryImpl tagEntry = new DescriptionListEntryImpl(mediaContentList, Collections.singletonList(new ListItemImpl(mediaContentList, type)));
             ListItemImpl tagDesc = new ListItemImpl(tagEntry, "");
-
-            Document tagDescDocument = schemaComponent.apply(mediaContentList, mediaType.getSchema());
-            mediaTypeExampleComponent.apply(tagDescDocument, mediaType.getExample());
-            examplesComponent.apply(tagDescDocument, mediaType.getExamples());
-            encodingComponent.apply(tagDescDocument, mediaType.getEncoding());
-            tagDesc.append(tagDescDocument);
+            Document document = new DocumentImpl(mediaContentList);
+            // Document tagDescDocument = schemaComponent.apply(mediaContentList, mediaType.getSchema());
+            mediaTypeExampleComponent.apply(document, mediaType.getExample());
+            examplesComponent.apply(document, mediaType.getExamples());
+            encodingComponent.apply(document, mediaType.getEncoding());
+            tagDesc.append(document);
 
             tagEntry.setDescription(tagDesc);
             mediaContentList.addEntry(tagEntry);

@@ -112,4 +112,54 @@ public class OpenApiHelpers {
         }
         return "";
     }
+
+    public static String getSchemaTypeAsString(String name, Schema schema) {
+        StringBuilder stringBuilder = new StringBuilder();
+        if (schema instanceof ArraySchema) {
+            stringBuilder.append("< ");
+            Schema<?> items = ((ArraySchema) schema).getItems();
+            stringBuilder.append(getSchemaType(name, items));
+            stringBuilder.append(" > ");
+            stringBuilder.append(schema.getType());
+        } else {
+            List enumList = schema.getEnum();
+            if (enumList != null) {
+                stringBuilder.append("enum (");
+                for (Object value : enumList) {
+                    stringBuilder.append(value.toString());
+                    stringBuilder.append(",");
+                }
+                stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+                stringBuilder.append(')');
+            } else {
+                stringBuilder.append(getSchemaType(name, schema));
+                String format = schema.getFormat();
+                if (format != null) {
+                    stringBuilder.append(' ');
+                    stringBuilder.append('(');
+                    stringBuilder.append(format);
+                    stringBuilder.append(')');
+                }
+            }
+        }
+        return stringBuilder.toString();
+    }
+
+    private static String getSchemaType(String name, Schema<?> schema) {
+        String type = schema.getType();
+        if (StringUtils.isNotEmpty(type)) {
+            if (type.equals("object") || type.equals("array")) {
+                return generateAp(name);
+            } else {
+                return type;
+            }
+        } else {
+            return generateRefLink(schema.get$ref());
+        }
+    }
+
+    private static String generateAp(String name) {
+        String anchorPoint = "<<" + name + "," + name + ">>";
+        return anchorPoint;
+    }
 }

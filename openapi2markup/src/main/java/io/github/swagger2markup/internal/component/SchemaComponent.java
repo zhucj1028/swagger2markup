@@ -18,14 +18,18 @@ package io.github.swagger2markup.internal.component;
 import io.github.swagger2markup.OpenAPI2MarkupConverter;
 import io.github.swagger2markup.adoc.ast.impl.DocumentImpl;
 import io.github.swagger2markup.adoc.ast.impl.ParagraphBlockImpl;
+import io.github.swagger2markup.adoc.ast.impl.SectionImpl;
+import io.github.swagger2markup.adoc.ast.impl.TableImpl;
 import io.github.swagger2markup.extension.MarkupComponent;
 import io.github.swagger2markup.internal.helper.OpenApiHelpers;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import org.apache.commons.lang3.StringUtils;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.ast.StructuralNode;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,13 +51,12 @@ public class SchemaComponent extends MarkupComponent<StructuralNode, SchemaCompo
         return new SchemaComponent.Parameters(schema);
     }
 
-    public Document apply(StructuralNode parent, @SuppressWarnings("rawtypes") Schema schema) {
-        return apply(parent, parameters(schema));
+    public Document apply(StructuralNode parent, @SuppressWarnings("rawtypes") Schema schema, Map<SectionImpl, TableImpl> tableMap, String param) {
+        return apply(parent, parameters(schema), tableMap, param);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    @Override
-    public Document apply(StructuralNode parent, SchemaComponent.Parameters parameters) {
+    public Document apply(StructuralNode parent, SchemaComponent.Parameters parameters, Map<SectionImpl, TableImpl> tableMap, String param) {
         Document schemaDocument = new DocumentImpl(parent);
         Schema schema = parameters.schema;
         if (null == schema) return schemaDocument;
@@ -98,12 +101,22 @@ public class SchemaComponent extends MarkupComponent<StructuralNode, SchemaCompo
         schemaDocument.append(paragraphBlock);
 
         Map<String, Schema> properties = schema.getProperties();
+        // 判断节点是否是 array 类型
+        if (schema instanceof ArraySchema) {
+            properties = ((ArraySchema) schema).getItems().getProperties();
+        }
+
         if (null != properties && !properties.isEmpty()) {
             PropertiesTableComponent propertiesTableComponent = new PropertiesTableComponent(context);
-            propertiesTableComponent.apply(schemaDocument, properties, schema.getRequired());
+            propertiesTableComponent.apply(schemaDocument, properties, schema.getRequired(), tableMap, param);
         }
 
         return schemaDocument;
+    }
+
+    @Override
+    public Document apply(StructuralNode parent, SchemaComponent.Parameters parameters) {
+        return null;
     }
 
     @SuppressWarnings("rawtypes")

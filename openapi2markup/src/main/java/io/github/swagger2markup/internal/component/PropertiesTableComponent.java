@@ -16,8 +16,10 @@
 package io.github.swagger2markup.internal.component;
 
 import io.github.swagger2markup.OpenAPI2MarkupConverter;
+import io.github.swagger2markup.adoc.ast.impl.SectionImpl;
 import io.github.swagger2markup.adoc.ast.impl.TableImpl;
 import io.github.swagger2markup.extension.MarkupComponent;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import org.asciidoctor.ast.StructuralNode;
 
@@ -43,18 +45,18 @@ public class PropertiesTableComponent extends MarkupComponent<StructuralNode, Pr
         return new Parameters(properties, schemaRequired);
     }
 
-    public StructuralNode apply(StructuralNode parent, @SuppressWarnings("rawtypes") Map<String, Schema> properties, List<String> schemaRequired) {
-        return apply(parent, parameters(properties, schemaRequired));
+    public StructuralNode apply(StructuralNode parent, @SuppressWarnings("rawtypes") Map<String, Schema> properties, List<String> schemaRequired, Map<SectionImpl, TableImpl> tableMap, String param) {
+        return apply(parent, parameters(properties, schemaRequired), tableMap, param);
     }
 
-    public StructuralNode apply(StructuralNode parent, Parameters params) {
+    public StructuralNode apply(StructuralNode parent, Parameters params, Map<SectionImpl, TableImpl> tableMap, String param) {
         @SuppressWarnings("rawtypes") Map<String, Schema> properties = params.properties;
         List<String> schemaRequired = params.schemaRequired;
-
         if (null == properties || properties.isEmpty()) return parent;
 
-        List<String> finalSchemaRequired = (null == schemaRequired) ? new ArrayList<>() : schemaRequired;
+        SectionImpl section = new SectionImpl(parent);
 
+        List<String> finalSchemaRequired = (null == schemaRequired) ? new ArrayList<>() : schemaRequired;
         TableImpl propertiesTable = new TableImpl(parent, new HashMap<>(), new ArrayList<>());
         propertiesTable.setOption("header");
         propertiesTable.setAttribute("caption", "", true);
@@ -65,14 +67,49 @@ public class PropertiesTableComponent extends MarkupComponent<StructuralNode, Pr
                 labels.getLabel(TABLE_HEADER_DESCRIPTION),
                 labels.getLabel(TABLE_HEADER_SCHEMA));
 
-        properties.forEach((name, schema) -> propertiesTable.addRow(
+       // properties.forEach((name, schema) -> propertiesTable.addRow(
+       //         generateInnerDoc(propertiesTable, name + LINE_SEPARATOR + requiredIndicator(finalSchemaRequired.contains(name),
+       //                 labels.getLabel(LABEL_REQUIRED), labels.getLabel(LABEL_OPTIONAL))),
+       //         schemaComponent.apply(propertiesTable, schema),
+       //         generateInnerDoc(propertiesTable, getSchemaTypeAsString(schema))
+       // ));
+       // parent.append(propertiesTable);
+
+        String title = param;
+        if (tableMap.isEmpty()) {
+            title = param + "_parameters";
+            param = "parameters";
+        }
+        tableMap.put(section, propertiesTable);
+        // 等级
+        section.setLevel(4);
+        // title
+        section.setTitle(param);
+        // 锚点
+        section.setId(title);
+        properties.forEach((name, schema) -> {
+            propertiesTable.addRow(
                     generateInnerDoc(propertiesTable, name + LINE_SEPARATOR + requiredIndicator(finalSchemaRequired.contains(name),
                             labels.getLabel(LABEL_REQUIRED), labels.getLabel(LABEL_OPTIONAL))),
-                schemaComponent.apply(propertiesTable, schema),
-                generateInnerDoc(propertiesTable, getSchemaTypeAsString(schema))
-            ));
-        parent.append(propertiesTable);
+                    generateInnerDoc(propertiesTable, schema.getDescription()),
+                    generateInnerDoc(propertiesTable, getSchemaTypeAsString(name, schema)));
+
+            if ((schema.getProperties() != null && !schema.getProperties().isEmpty()) || schema instanceof ArraySchema) {
+                schemaComponent.apply(parent, schema, tableMap, name);
+            }
+        });
+
+        tableMap.forEach((key, value)-> {
+            parent.append(key);
+            parent.append(value);
+        });
+
         return parent;
+    }
+
+    @Override
+    public StructuralNode apply(StructuralNode structuralNode, Parameters parameters) {
+        return null;
     }
 
     @SuppressWarnings("rawtypes")

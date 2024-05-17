@@ -40,9 +40,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 
 public class OpenAPI2MarkupConverter extends AbstractSchema2MarkupConverter<OpenAPI> {
     private final OverviewDocument overviewDocument;
@@ -174,10 +172,14 @@ public class OpenAPI2MarkupConverter extends AbstractSchema2MarkupConverter<Open
     public void toFile(Path outputFile) {
         Validate.notNull(outputFile, "outputFile must not be null");
 
-        writeToFile(applyOverviewDocument(), outputFile);
-        writeToFile(applyPathsDocument(), outputFile);
-        writeToFile(applyComponentsDocument(), outputFile);
-        writeToFile(applySecurityDocument(), outputFile);
+//        writeToFile(applyOverviewDocument(), outputFile);
+//        writeToFile(applyPathsDocument(), outputFile);
+//        writeToFile(applyComponentsDocument(), outputFile);
+//        writeToFile(applySecurityDocument(), outputFile);
+        writeToFile(applyOverviewDocument(), outputFile,new OpenOption[0]);
+        writeToFile(applyPathsDocument(), outputFile,new OpenOption[]{StandardOpenOption.APPEND});
+        writeToFile(applyComponentsDocument(), outputFile,new OpenOption[]{StandardOpenOption.APPEND});
+        writeToFile(applySecurityDocument(), outputFile,new OpenOption[]{StandardOpenOption.APPEND});
     }
 
     @Override
@@ -232,6 +234,16 @@ public class OpenAPI2MarkupConverter extends AbstractSchema2MarkupConverter<Open
         }
     }
 
+    private void writeToFile(Document document, Path path, OpenOption... options) {
+        MarkupLanguage markupLanguage = openAPIContext.config.getMarkupLanguage();
+        if (isMarkupLanguageSupported(markupLanguage)) {
+            String fileExtension = markupLanguage.getFileNameExtensions().get(0);
+            writeToFileWithoutExtension(document, path.resolveSibling(path.getFileName().toString() + fileExtension), options);
+        } else {
+            throw new RuntimeException("Given Markup language '"+markupLanguage+"' is not supported by "+getClass().getName());
+        }
+    }
+
     private boolean isMarkupLanguageSupported(MarkupLanguage markupLanguage) {
         return markupLanguage == MarkupLanguage.ASCIIDOC;
     }
@@ -249,6 +261,24 @@ public class OpenAPI2MarkupConverter extends AbstractSchema2MarkupConverter<Open
         } catch (IOException e) {
             throw new RuntimeException("Failed to write file", e);
         }
+        if (logger.isInfoEnabled()) {
+            logger.info("Markup document written to: {}", file);
+        }
+    }
+
+    private void writeToFileWithoutExtension(Document document, Path file, OpenOption... options) {
+        try {
+            Files.createDirectories(file.getParent());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed create directory", e);
+        }
+
+        try (BufferedWriter writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8, options)) {
+            writer.write(document.convert());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write file", e);
+        }
+
         if (logger.isInfoEnabled()) {
             logger.info("Markup document written to: {}", file);
         }

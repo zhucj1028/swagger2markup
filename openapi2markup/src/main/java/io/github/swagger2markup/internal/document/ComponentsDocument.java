@@ -2,6 +2,7 @@ package io.github.swagger2markup.internal.document;
 
 import io.github.swagger2markup.OpenAPI2MarkupConverter;
 import io.github.swagger2markup.adoc.ast.impl.SectionImpl;
+import io.github.swagger2markup.adoc.ast.impl.TableImpl;
 import io.github.swagger2markup.extension.MarkupComponent;
 import io.github.swagger2markup.internal.component.*;
 import io.swagger.v3.oas.models.Components;
@@ -15,6 +16,9 @@ import org.asciidoctor.ast.Document;
 import org.asciidoctor.ast.Section;
 import org.asciidoctor.ast.StructuralNode;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static io.github.swagger2markup.config.OpenAPILabels.*;
@@ -98,8 +102,10 @@ public class ComponentsDocument extends MarkupComponent<Document, ComponentsDocu
         schemasSection.setTitle(labels.getLabel(SECTION_TITLE_SCHEMAS));
         schemasSection.setId(schemasSectionId);
         schemas.forEach((name, schema) -> {
+            // 初始化 tables 用于存放参数表格
+            Map<SectionImpl, TableImpl> tableMap = new LinkedHashMap<>();
             String schemaDocumentId = schemasSectionId + "_" + name;
-            Document schemaDocument = schemaComponent.apply(schemasSection, schema);
+            Document schemaDocument = schemaComponent.apply(schemasSection, schema, tableMap, name);
             schemaDocument.setTitle(name);
             schemaDocument.setId(schemaDocumentId);
             schemasSection.append(schemaDocument);
